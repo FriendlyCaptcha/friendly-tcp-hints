@@ -9,7 +9,7 @@ and build some logic on top of the lower level data.
 
 This requires setting up a passive TCP packet filter on the load balancer node and augmenting the HTTP traffic with additional info.
 
-###Components
+### Components
 
 - p0f (libpcap based sniffer process)
 - haproxy (load balancer)
@@ -67,6 +67,7 @@ Place executable as `/usr/local/bin/spoa-p0f` and setup new service running spoa
     
 
 (Check it works):
+
         sudo systemctl daemon-reload
         sudo systemctl enable --now p0f-spoe-agent
         systemctl status p0f-spoe-agent --no-pager
