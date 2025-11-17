@@ -1,0 +1,19 @@
+[p0f]
+spoe-agent p0f-agent
+  option var-prefix p0f
+  timeout hello      100ms
+  timeout idle       10s
+  timeout processing 10ms
+  use-backend spoe_p0f
+  groups p0f-group
+
+spoe-message p0f-conn
+  event on-frontend-http-request
+  args ci=src
+  args cp=src_port
+  args fi=dst
+  args fp=dst_port
+
+spoe-group p0f-group
+  messages p0f-conn
+
