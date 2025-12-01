@@ -36,9 +36,12 @@ This requires setting up a passive TCP packet filter on the load balancer node a
 ### Setup Instructions
 
 
-Install p0f
+Build custom p0f with mtu and mss data
 
-`sudo apt-get install p0f`
+    ./build.sh all
+    in case it fails, check CRLF, if necessary do:
+    dos2unix build.sh
+
 
 Make sure it starts on startup (change network name to the actual one) or setup a new service which runs on startup:
 `sudo p0f -i INTERFACE_NAME -s /var/run/p0f.sock -d`
@@ -90,23 +93,14 @@ Add the following records into haproxy.cfg:
       http-request send-spoe-group p0f p0f-group
     
       # Set headers
-      http-request set-header X-P0f-OS          %[var(sess.p0f.os)]          if { var(sess.p0f.os) -m found }
-      http-request set-header X-P0f-Link        %[var(sess.p0f.link)]        if { var(sess.p0f.link) -m found }
-      http-request set-header X-P0f-Dist        %[var(sess.p0f.dist)]        if { var(sess.p0f.dist) -m found }
-      http-request set-header X-P0f-Uptime      %[var(sess.p0f.uptime)]      if { var(sess.p0f.uptime) -m found }
-      http-request set-header X-P0f-NAT         %[var(sess.p0f.nat)]         if { var(sess.p0f.nat) -m found }
-    
-      # OS match quality 
-      http-request set-header X-P0f-MatchQ      %[var(sess.p0f.os_match_q)]  if { var(sess.p0f.os_match_q) -m found }
-      http-request set-header X-P0f-BadSW       %[var(sess.p0f.bad_sw)]      if { var(sess.p0f.bad_sw) -m found }
-    
-      # Timings and connection
-      http-request set-header X-P0f-FirstSeen   %[var(sess.p0f.first_seen)]  if { var(sess.p0f.first_seen) -m found }
-      http-request set-header X-P0f-LastSeen    %[var(sess.p0f.last_seen)]   if { var(sess.p0f.last_seen) -m found }
-      http-request set-header X-P0f-LastNat     %[var(sess.p0f.last_nat)]    if { var(sess.p0f.last_nat) -m found }
-      http-request set-header X-P0f-LastChg     %[var(sess.p0f.last_chg)]    if { var(sess.p0f.last_chg) -m found }
-      http-request set-header X-P0f-Conns       %[var(sess.p0f.total_conn)]  if { var(sess.p0f.total_conn) -m found }
-      http-request set-header X-P0f-UpModDays   %[var(sess.p0f.up_mod_days)] if { var(sess.p0f.up_mod_days) -m found }
+      http-request set-header x_tcp_os          %[var(sess.p0f.os)]          if { var(sess.p0f.os) -m found }
+      http-request set-header x_tcp_link        %[var(sess.p0f.link)]        if { var(sess.p0f.link) -m found }
+      http-request set-header x_tcp_dist        %[var(sess.p0f.dist)]        if { var(sess.p0f.dist) -m found }
+      http-request set-header x_tcp_uptime      %[var(sess.p0f.uptime)]      if { var(sess.p0f.uptime) -m found }
+      http-request set-header x_tcp_nat         %[var(sess.p0f.nat)]         if { var(sess.p0f.nat) -m found }
+      http-request set-header x-tcp-matchq      %[var(sess.p0f.os_match_q)]  if { var(sess.p0f.os_match_q) -m found }
+      http-request set-header x-tcp-mtu         %[var(sess.p0f.link_mtu)]         if { var(sess.p0f.link_mtu) -m found }
+      http-request set-header x-tcp-mss         %[var(sess.p0f.link_mss)]         if { var(sess.p0f.link_mss) -m found }
 
 
 Restart haproxy:
@@ -115,8 +109,11 @@ Restart haproxy:
 
 ## Troubleshooting
 
+If p0f fails to start, check if it is able to load the p0f.fp file (text file with signatures).
+In case of failure, check CRLF and do dos2unix if needed.
+
 If all goes well the HTTP packets coming into the backend app should contain
-new headers with prefix **X-P0f-**.
+new headers with prefix x-tcp (or as in the sample cfg file, **X-P0f-**).
 
 When no any new header is found here are the things to check:
 - Make sure p0f is running and has an open socket:
@@ -140,5 +137,7 @@ journalctl -xeu haproxy.service
 ### Additional info
 In the file `/etc/p0f/p0f.fp` there is a list of signatures used to determine heuristics, 
 it can be further modified if needed to accomodate specific use cases.
+
+
 
 
