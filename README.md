@@ -98,9 +98,39 @@ Add the following records into haproxy.cfg:
       http-request set-header x_tcp_dist        %[var(sess.p0f.dist)]        if { var(sess.p0f.dist) -m found }
       http-request set-header x_tcp_uptime      %[var(sess.p0f.uptime)]      if { var(sess.p0f.uptime) -m found }
       http-request set-header x_tcp_nat         %[var(sess.p0f.nat)]         if { var(sess.p0f.nat) -m found }
-      http-request set-header x-tcp-matchq      %[var(sess.p0f.os_match_q)]  if { var(sess.p0f.os_match_q) -m found }
-      http-request set-header x-tcp-mtu         %[var(sess.p0f.link_mtu)]         if { var(sess.p0f.link_mtu) -m found }
-      http-request set-header x-tcp-mss         %[var(sess.p0f.link_mss)]         if { var(sess.p0f.link_mss) -m found }
+      http-request set-header x_tcp_matchq      %[var(sess.p0f.os_match_q)]  if { var(sess.p0f.os_match_q) -m found }
+      http-request set-header x_tcp_mtu         %[var(sess.p0f.link_mtu)]         if { var(sess.p0f.link_mtu) -m found }
+      http-request set-header x_tcp_mss         %[var(sess.p0f.link_mss)]         if { var(sess.p0f.link_mss) -m found }
+
+      # Track clients by IP and store stats
+      stick-table type ip size 1m expire 10m store http_req_cnt,http_req_rate(10m),conn_rate(10m),conn_cur,bytes_in_rate(10m),bytes_out_rate(10m)
+
+      # Track connection by source IP
+      tcp-request connection track-sc0 src
+
+      # For http_req_cnt / http_req_rate)
+      http-request track-sc0 src
+
+      # original ip for debugging
+      # http-request set-header x_tcp_Client-IP %[src]
+
+      # number of simultaneously active connections ATM
+      http-request set-header x_tcp_CurSimCon  %[sc_conn_cur(0)]
+    
+      # total registered within 10 minutes (see expire 10m)
+      http-request set-header x_tcp_TotalCon   %[sc_http_req_cnt(0)]
+    
+      # http requests rate 10m per IP 
+      http-request set-header x_tcp_ReqRate10m   %[sc_http_req_rate(0)]
+    
+      # connections rate 10m per IP 
+      http-request set-header x_tcp_ConnRate10m  %[sc_conn_rate(0)]
+    
+      # bytes in (expires 10m)
+      http-request set-header x_tcp_BytesInRate  %[sc_bytes_in_rate(0)]
+    
+      # bytes out (expires 10m)
+      http-request set-header x_tcp_BytesOutRate %[sc_bytes_out_rate(0)]
 
 
 Restart haproxy:
